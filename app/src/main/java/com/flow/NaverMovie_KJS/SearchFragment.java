@@ -63,7 +63,6 @@ public class SearchFragment extends Fragment {
             if(data != null){
                 String getdata = data.getStringExtra("data");
                 FragmentTransaction ft = getFragmentManager().beginTransaction();
-//                ft.detach(this).attach(this).commit();
                 adapter.clearItems();
                 makeRequest(getdata);
 
