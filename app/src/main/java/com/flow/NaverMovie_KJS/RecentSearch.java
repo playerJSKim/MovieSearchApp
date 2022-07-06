@@ -68,8 +68,6 @@ public class RecentSearch extends AppCompatActivity {
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         lp.gravity = Gravity.LEFT;
         view1.setLayoutParams(lp);
-
-
         view1.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
