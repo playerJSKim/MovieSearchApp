@@ -49,7 +49,6 @@ public class SearchFragment extends Fragment {
     MovieAdapter adapter;
     RecyclerView recyclerView;
     static RequestQueue requestQueue;
-
     String clientId = "Co1THiB4ZOaY6cvwv5yE"; // 네이버 검색 API 클라이언트 ID
     String clientSecret = "l9jIEJXJET"; // 네이버 검색 API 클라이언트 시크릿
     String uriString = "content://com.flow.NaverMovie_KJS/movie"; // 데이터 저장 url
@@ -130,9 +129,8 @@ public class SearchFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-
-
     }
+
     private void refresh(){
         FragmentTransaction ft = getFragmentManager().beginTransaction();
         ft.detach(this).attach(this).commit();
