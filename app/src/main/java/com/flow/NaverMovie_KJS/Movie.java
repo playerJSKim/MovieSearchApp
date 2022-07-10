@@ -20,4 +20,11 @@ public class Movie {
         this.actor = actor;
         this.userRating = Float.parseFloat(userRating);
     }
+    public String getTitle(){
+        return title;
+    }
+    public String getPubDate(){
+        return pubDate;
+    }
+
 }
