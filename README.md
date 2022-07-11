@@ -5,3 +5,13 @@
  - 검색버튼 옆의 최근검색 버튼을 누르면 검색이력이 나옵니다.
  ( 최근 10개의 검색어가 표출됩니다. )
  - 최근 검색어 목록에서 선택시 해당 검색어로 재검색 해줍니다.
+
+
+2022.07.11
+ - MVVM 구조로 변경중
+  : Sharedpreferences -> Room
+  : fragment와 Activity data 통신 
+    intent -> ViewModel
+ 
+ #아직 통신 모듈이 view와 coupling되지 않도록 모듈화되지 않음
+  
