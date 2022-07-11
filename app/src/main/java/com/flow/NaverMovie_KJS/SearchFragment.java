@@ -21,9 +21,12 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
+import androidx.lifecycle.Observer;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.room.Room;
 
 import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
@@ -32,10 +35,16 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
+import com.flow.NaverMovie_KJS.MovieDB.MovieDataManager;
+import com.flow.NaverMovie_KJS.MovieDB.MovieDatabase;
+import com.flow.NaverMovie_KJS.MovieDB.MovieInfo;
+import com.flow.NaverMovie_KJS.ViewModel.MovieViewModel;
+import com.flow.NaverMovie_KJS.ViewModel.MovieViewModelFactory;
 import com.google.gson.Gson;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.json.JSONArray;
@@ -46,6 +55,7 @@ import org.json.JSONException;
  */
 public class SearchFragment extends Fragment {
 
+    private MovieDatabase movieDatabase;
     MovieAdapter adapter;
     RecyclerView recyclerView;
     static RequestQueue requestQueue;
@@ -54,6 +64,9 @@ public class SearchFragment extends Fragment {
     String uriString = "content://com.flow.NaverMovie_KJS/movie"; // 데이터 저장 url
 
     private ArrayList<String> recentarrayList = new ArrayList<String>();
+
+    MovieViewModel movieViewModel;
+    MovieDataManager movieDataManager = new MovieDataManager();;
 
     /** registerForActivityResult를 사용하기 위한 초기화 */
     ActivityResultLauncher<Intent> launcher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),result -> {
@@ -81,12 +94,14 @@ public class SearchFragment extends Fragment {
         recyclerView.addItemDecoration(new DividerItemDecoration(getContext(), DividerItemDecoration.VERTICAL));
         recyclerView.setAdapter(adapter);
 
-        /** 프래그먼트로 부터 넘겨받은 데이터가 있으면 바로 검색*/
-        Bundle bundle=getArguments();
-        if(bundle != null){
-            String senddata = bundle.getString("data");
-            makeRequest(senddata);
-        }
+        movieDatabase = Room.databaseBuilder(getActivity(),MovieDatabase.class,"movie").allowMainThreadQueries().build();
+        movieViewModel = new ViewModelProvider(getActivity()).get(MovieViewModel.class);
+
+
+        Observer<String> title = newtitle -> makeRequest(newtitle);
+        movieViewModel.getTitle().observe(getActivity(),title);
+
+//        Observer<String> resdata = newdata ->
 
         final SearchView searchView = rootView.findViewById(R.id.searchView);
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener(){
@@ -94,7 +109,9 @@ public class SearchFragment extends Fragment {
             public boolean onQueryTextSubmit(String query) {
                 //검색버튼이 눌렸을 때
                 adapter.clearItems();
-                makeRequest(query);
+
+                movieViewModel.getTitle().setValue(query);
+
                 return false;
             }
             @Override
@@ -117,7 +134,7 @@ public class SearchFragment extends Fragment {
             @Override
             public void onClick(View v){
                 Intent intent = new Intent(getActivity(), RecentSearch.class);
-                intent.putStringArrayListExtra("recentMovie",getRecent("recent")); //최근 검색 목록 전달
+//                intent.putStringArrayListExtra("recentMovie",getRecent("recent")); //최근 검색 목록 전달
                 launcher.launch(intent);
             }
         });
@@ -131,12 +148,13 @@ public class SearchFragment extends Fragment {
         super.onResume();
     }
 
-    private void refresh(){
-        FragmentTransaction ft = getFragmentManager().beginTransaction();
-        ft.detach(this).attach(this).commit();
-    }
+
     private void makeRequest(String query) {
-        inQueue(query);
+        MovieInfo mI = new MovieInfo();
+        mI.title = query;
+        movieDatabase.getMovieDao().insert(mI);
+        movieDataManager.init(getActivity());
+        movieDataManager.inQueue(query);
 
         String apiURL = "https://openapi.naver.com/v1/search/movie.json?query="+query;
         StringRequest request = new StringRequest(Request.Method. GET , apiURL, new Response.Listener<String>() {
@@ -176,72 +194,4 @@ public class SearchFragment extends Fragment {
         adapter.notifyDataSetChanged();
     }
 
-    /**
-     * ArrayList를 Queue로 사용하여 최근 검색된 순서로 검색어를 저장 및 관리
-     * 최대 10개의 검색어 저장
-     * @param data
-     */
-    public void inQueue(String data){
-        ArrayList<String> testarr = getRecent("recent");
-        if(testarr.size()>0){
-            for(int i=0; i<testarr.size(); i++){
-                if(data.compareTo(testarr.get(i)) == 0){
-                    testarr.remove(i);
-                }
-            }
-        }
-        if(testarr.size() < 10){
-            testarr.add(data);
-            putRecent("recent",testarr);
-
-
-        }else if(testarr.size() >= 10){
-            testarr.remove(0);
-            testarr.add(data);
-            putRecent("recent",testarr);
-        }
-    }
-
-    /**
-     * SharedPreferences에 ArrayList 저장(영화 검색 목록)
-     * @param key
-     * @param values
-     */
-    private void putRecent(String key, ArrayList<String> values) {
-        SharedPreferences sf = PreferenceManager.getDefaultSharedPreferences(getActivity());
-        SharedPreferences.Editor editor = sf.edit();
-        JSONArray a = new JSONArray();
-        for (int i = 0; i < values.size(); i++) {
-            a.put(values.get(i));
-        }
-        if (!values.isEmpty()) {
-            editor.putString(key, a.toString());
-        } else {
-            editor.putString(key, null);
-        }
-        editor.apply();
-    }
-
-    /**
-     * SharedPreferences에 ArrayList 불러오기(영화 검색 목록)
-     * @param key
-     * @return
-     */
-    private ArrayList<String> getRecent(String key) {
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
-        String json = prefs.getString(key, null);
-        ArrayList<String> urls = new ArrayList<String>();
-        if (json != null) {
-            try {
-                JSONArray a = new JSONArray(json);
-                for (int i = 0; i < a.length(); i++) {
-                    String url = a.optString(i);
-                    urls.add(url);
-                }
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-        }
-        return urls;
-    }
 }

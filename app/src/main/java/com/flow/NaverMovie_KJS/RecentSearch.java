@@ -3,6 +3,7 @@ package com.flow.NaverMovie_KJS;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
+import androidx.room.Room;
 
 import android.content.Context;
 import android.content.Intent;
@@ -18,11 +19,15 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import com.flow.NaverMovie_KJS.MovieDB.MovieDatabase;
+import com.flow.NaverMovie_KJS.MovieDB.MovieInfo;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 public class RecentSearch extends AppCompatActivity {
     Context context;
@@ -31,7 +36,8 @@ public class RecentSearch extends AppCompatActivity {
     private TextView tv;
     private LinearLayout container;
     private static final float FONT_SIZE = 20;
-
+    private MovieDatabase movieDatabase;
+    final ArrayList<String> recentmovie = new ArrayList<>();
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -40,9 +46,13 @@ public class RecentSearch extends AppCompatActivity {
         context = getApplicationContext();
         container = findViewById(R.id.container);
         arr_movie = new ArrayList<>();
+        movieDatabase = Room.databaseBuilder(this, MovieDatabase.class,"movie").allowMainThreadQueries().build();
 
-        Intent intent = getIntent();
-        final ArrayList<String> recentmovie = intent.getStringArrayListExtra("recentMovie");
+        List<MovieInfo> list = movieDatabase.getMovieDao().getAll();
+        for(MovieInfo movieInfo : list){
+            recentmovie.add(movieInfo.title);
+        }
+
         if (recentmovie != null) {
             Collections.reverse(recentmovie);
         }
